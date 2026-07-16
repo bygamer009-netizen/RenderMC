@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minecraft Skin Renderer (Avanzado)</title>
+    <!-- Importamos la librería skinview3d -->
+    <script src="https://cdn.jsdelivr.net/npm/skinview3d@latest/bundles/skinview3d.bundle.js"></script>
+    <style>
+        :root {
+            --bg-color: #0c0813;
+            --panel-bg: #140e21;
+            --accent-purple: #a855f7;
+            --accent-pink: #f43f5e;
+            --border-color: #3b2063;
+            --text-color: #e2e8f0;
+            --text-muted: #94a3b8;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #fff;
+            text-shadow: 0 0 15px rgba(168, 85, 247, 0.6);
+        }
+
+        .header p {
+            color: var(--text-muted);
+            margin: 5px 0 0 0;
+            font-size: 0.95rem;
+        }
+
+        /* Contenedor Principal */
+        .workspace {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 20px;
+            max-width: 1100px;
+            width: 100%;
+        }
+
+        /* Paneles */
+        .panel-sidebar {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+
+        .panel-preview {
+            background: radial-gradient(circle, #24143a 0%, #07040a 100%);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        /* Títulos de sección */
+        .section-title {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--accent-purple);
+            margin-bottom: 10px;
+            font-weight: bold;
+            border-bottom: 1px solid rgba(168, 85, 247, 0.2);
+            padding-bottom: 5px;
+        }
+
+        /* Botón Importar Skin */
+        .upload-btn-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .btn-upload {
+            border: 2px dashed var(--accent-purple);
+            color: #fff;
+            background-color: rgba(168, 85, 247, 0.05);
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            width: 100%;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .btn-upload:hover {
+            background-color: rgba(168, 85, 247, 0.15);
+            border-color: #c084fc;
+        }
+
+        .upload-btn-wrapper input[type=file] {
+            font-size: 100px;
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        /* Presets (Galería) */
+        .preset-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .preset-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: #1c132d;
+            border: 1px solid rgba(168, 85, 247, 0.1);
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .preset-item:hover {
+            background: #251a3c;
+            border-color: var(--accent-purple);
+        }
+
+        .preset-item.active {
+            background: rgba(168, 85, 247, 0.2);
+            border-color: var(--accent-purple);
+            box-shadow: 0 0 10px rgba(168, 85, 247, 0.2);
+        }
+
+        .preset-icon {
+            width: 32px;
+            height: 32px;
+            background: #100a1c;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .preset-info h4 {
+            margin: 0;
+            font-size: 13px;
+            color: #fff;
+        }
+
+        .preset-info p {
+            margin: 2px 0 0 0;
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        /* Controles Sliders */
+        .control-group {
+            margin-bottom: 12px;
+        }
+
+        .control-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 5px;
+        }
+
+        .control-label span:last-child {
+            color: var(--accent-purple);
+        }
+
+        input[type="range"] {
+            width: 100%;
+            -webkit-appearance: none;
+            background: #1c132d;
+            height: 6px;
+            border-radius: 3px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--accent-purple);
+            cursor: pointer;
+            box-shadow: 0 0 8px var(--accent-purple);
+        }
+
+        /* Botón de Generar/Descargar */
+        .btn-generate {
+            background: linear-gradient(135deg, var(--accent-purple) 0%, #7c3aed 100%);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            font-size: 14px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            max-width: 400px;
+            margin-top: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
+            transition: all 0.3s;
+        }
+
+        .btn-generate:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(139, 92, 246, 0.6);
+            background: linear-gradient(135deg, #b066ff 0%, #8b5cf6 100%);
+        }
+
+        /* El contenedor de canvas de skinview3d */
+        #skin-container {
+            width: 100%;
+            height: 500px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        canvas {
+            max-width: 100%;
+            max-height: 100%;
+            outline: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Minecraft Skin Renderer</h1>
+        <p>Carga tu skin y crea renders épicos</p>
+    </div>
+
+    <div class="workspace">
+        <!-- BARRA LATERAL -->
+        <div class="panel-sidebar">
+            
+            <!-- 1. Cargar Skin -->
+            <div>
+                <div class="section-title">Importar Skin</div>
+                <div class="upload-btn-wrapper">
+                    <button class="btn-upload">📂 Seleccionar Archivo PNG</button>
+                    <input type="file" id="skin-uploader" accept="image/png">
+                </div>
+            </div>
+
+            <!-- 2. Presets de Renderizado -->
+            <div>
+                <div class="section-title">Presets de Renderizado</div>
+                <div class="preset-list">
+                    <div class="preset-item active" data-preset="combate">
+                        <div class="preset-icon">⚔️</div>
+                        <div class="preset-info">
+                            <h4>Combate Épico</h4>
+                            <p>Luces de neón y pose dinámica</p>
+                        </div>
+                    </div>
+                    <div class="preset-item" data-preset="estudio">
+                        <div class="preset-icon">💡</div>
+                        <div class="preset-info">
+                            <h4>Estudio Detallado</h4>
+                            <p>Luz limpia de estudio fotográfico</p>
+                        </div>
+                    </div>
+                    <div class="preset-item" data-preset="bosque">
+                        <div class="preset-icon">🌲</div>
+                        <div class="preset-info">
+                            <h4>Fondo de Bosque</h4>
+                            <p>Luz natural para exteriores</p>
+                        </div>
+                    </div>
+                    <div class="preset-item" data-preset="retrato">
+                        <div class="preset-icon">📸</div>
+                        <div class="preset-info">
+                            <h4>Retrato Dramático</h4>
+                            <p>Primer plano, sombras fuertes</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Controles de Cámara -->
+            <div>
+                <div class="section-title">Controles de Cámara</div>
+                <div class="control-group">
+                    <div class="control-label"><span>Zoom / Distancia</span><span id="zoom-val">60</span></div>
+                    <input type="range" id="camera-zoom" min="20" max="100" value="60">
+                </div>
+                <div class="control-group">
+                    <div class="control-label"><span>Rotación</span><span id="rot-val">20°</span></div>
+                    <input type="range" id="camera-rot" min="-180" max="180" value="20">
+                </div>
+            </div>
+
+            <!-- 4. Ajustes de Luz -->
+            <div>
+                <div class="section-title">Ajustes de Luz</div>
+                <div class="control-group">
+                    <div class="control-label"><span>Intensidad Ambiente</span><span id="ambient-val">0.5</span></div>
+                    <input type="range" id="light-ambient" min="0" max="2" step="0.1" value="0.5">
+                </div>
+                <div class="control-group">
+                    <div class="control-label"><span>Foco Violeta (Principal)</span><span id="violet-val">1.5</span></div>
+                    <input type="range" id="light-violet" min="0" max="3" step="0.1" value="1.5">
+                </div>
+                <div class="control-group">
+                    <div class="control-label"><span>Foco Rosa (Secundario)</span><span id="pink-val">1.0</span></div>
+                    <input type="range" id="light-pink" min="0" max="3" step="0.1" value="1.0">
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ÁREA DE PREVIEW Y RENDERIZADO -->
+        <div class="panel-preview">
+            <div id="skin-container"></div>
+            <button class="btn-generate" id="download-btn">✨ Generar y Descargar Render</button>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. Inicialización de skinview3d ---
+        const viewer = new skinview3d.SkinViewer({
+            canvas: document.createElement("canvas"),
+            width: 500,
+            height: 500,
+            skin: "https://bslayerss.github.io/skinview3d/img/steve.png" // Skin por defecto
+        });
+
+        // Adjuntar el canvas al contenedor
+        document.getElementById("skin-container").appendChild(viewer.canvas);
+
+        // Permitir que el usuario arrastre con el mouse la cámara si lo desea
+        viewer.controls.enableZoom = false; // Desactivamos zoom de mouse para controlarlo con el slider
+
+        // --- 2. Referencias a Elementos HTML ---
+        const uploader = document.getElementById("skin-uploader");
+        const presetItems = document.querySelectorAll(".preset-item");
+        const zoomSlider = document.getElementById("camera-zoom");
+        const rotSlider = document.getElementById("camera-rot");
+        const ambientSlider = document.getElementById("light-ambient");
+        const violetSlider = document.getElementById("light-violet");
+        const pinkSlider = document.getElementById("light-pink");
+        const downloadBtn = document.getElementById("download-btn");
+
+        // --- 3. Personalización Extra de Luces en Three.js ---
+        // Desactivamos la luz por defecto para tener control total
+        viewer.lights.primary.intensity = 0; 
+        
+        // Creamos nuestras propias luces 3D personalizables para el look de render
+        const ambientLight = viewer.lights.ambient; // Usamos el ambient ya existente
+        
+        // Foco Violeta (Simula el color de tu imagen original)
+        const violetLight = new skinview3d.THREE.DirectionalLight(0xb026ff, 1.5);
+        violetLight.position.set(5, 7, 5);
+        viewer.scene.add(violetLight);
+
+        // Foco Rosa/Cálido lateral
+        const pinkLight = new skinview3d.THREE.DirectionalLight(0xff2a85, 1.0);
+        pinkLight.position.set(-5, 3, 5);
+        viewer.scene.add(pinkLight);
+
+        // Animación por defecto (Caminando relajado)
+        let activeAnimation = viewer.animations.add(skinview3d.WalkingAnimation);
+        activeAnimation.speed = 0.4;
+
+        // --- 4. Lógica de los Controles (Sliders) ---
+
+        // Cámara Zoom (distancia Z de la cámara)
+        zoomSlider.addEventListener("input", (e) => {
+            const val = e.target.value;
+            document.getElementById("zoom-val").innerText = val;
+            viewer.camera.position.z = val;
+        });
+
+        // Cámara Rotación (Ángulo Y de la cámara)
+        rotSlider.addEventListener("input", (e) => {
+            const val = e.target.value;
+            document.getElementById("rot-val").innerText = val + "°";
+            const rad = (val * Math.PI) / 180;
+            viewer.camera.position.x = Math.sin(rad) * zoomSlider.value;
+            viewer.camera.position.z = Math.cos(rad) * zoomSlider.value;
+            viewer.camera.lookAt(0, 10, 0); // Apuntar al cuerpo del personaje
+        });
+
+        // Luz Ambiente
+        ambientSlider.addEventListener("input", (e) => {
+            ambientLight.intensity = e.target.value;
+            document.getElementById("ambient-val").innerText = e.target.value;
+        });
+
+        // Foco Violeta
+        violetSlider.addEventListener("input", (e) => {
+            violetLight.intensity = e.target.value;
+            document.getElementById("violet-val").innerText = e.target.value;
+        });
+
+        // Foco Rosa
+        pinkSlider.addEventListener("input", (e) => {
+            pinkLight.intensity = e.target.value;
+            document.getElementById("pink-val").innerText = e.target.value;
+        });
+
+        // --- 5. Lógica de Carga de Skin ---
+        uploader.addEventListener("change", (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    viewer.loadSkin(e.target.result);
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // --- 6. Sistema de Presets ---
+        const applyPreset = (presetName) => {
+            // Detener animación actual si existe
+            if (activeAnimation) activeAnimation.paused = true;
+
+            if (presetName === "combate") {
+                // Luces neón violeta/rosa de combate
+                ambientLight.color.setHex(0x1a0b2e);
+                ambientLight.intensity = 0.4;
+                violetLight.color.setHex(0xb026ff);
+                violetLight.intensity = 1.8;
+                pinkLight.color.setHex(0xff2a85);
+                pinkLight.intensity = 1.3;
+                
+                // Fondo
+                document.querySelector(".panel-preview").style.background = "radial-gradient(circle, #24143a 0%, #07040a 100%)";
+                
+                // Pose/Animación activa
+                activeAnimation = viewer.animations.add(skinview3d.RunningAnimation);
+                activeAnimation.speed = 0.5;
+
+                // Actualizar UI de los sliders
+                updateSlidersUI(0.4, 1.8, 1.3);
+                
+            } else if (presetName === "estudio") {
+                // Luces de fotografía blancas y limpias
+                ambientLight.color.setHex(0xffffff);
+                ambientLight.intensity = 0.8;
+                violetLight.color.setHex(0xffffff);
+                violetLight.intensity = 1.2;
+                pinkLight.color.setHex(0xdddddd);
+                pinkLight.intensity = 0.6;
+
+                // Fondo estudio gris
+                document.querySelector(".panel-preview").style.background = "radial-gradient(circle, #334155 0%, #0f172a 100%)";
+
+                // Pose quieto
+                activeAnimation = null;
+
+                updateSlidersUI(0.8, 1.2, 0.6);
+
+            } else if (presetName === "bosque") {
+                // Tonos verdosos y luz cálida del sol
+                ambientLight.color.setHex(0x1c3a27);
+                ambientLight.intensity = 0.6;
+                violetLight.color.setHex(0xfff7d6); // Sol amarillo
+                violetLight.intensity = 1.5;
+                pinkLight.color.setHex(0x38bdf8); // Reflejo azul del cielo
+                pinkLight.intensity = 0.8;
+
+                // Fondo estilo bosque oscuro
+                document.querySelector(".panel-preview").style.background = "radial-gradient(circle, #064e3b 0%, #022c22 100%)";
+
+                // Caminando
+                activeAnimation = viewer.animations.add(skinview3d.WalkingAnimation);
+                activeAnimation.speed = 0.3;
+
+                updateSlidersUI(0.6, 1.5, 0.8);
+
+            } else if (presetName === "retrato") {
+                // Primer plano dramático
+                ambientLight.color.setHex(0x050505);
+                ambientLight.intensity = 0.1;
+                violetLight.color.setHex(0xffffff);
+                violetLight.intensity = 2.0;
+                pinkLight.color.setHex(0xff00ff);
+                pinkLight.intensity = 1.5;
+
+                // Fondo negro absoluto
+                document.querySelector(".panel-preview").style.background = "#050505";
+
+                // Quieto mirando de lado
+                activeAnimation = null;
+                viewer.camera.position.set(0, 14, 30); // Acercar zoom para retrato
+
+                updateSlidersUI(0.1, 2.0, 1.5);
+                zoomSlider.value = 30;
+                document.getElementById("zoom-val").innerText = "30";
+            }
+        };
+
+        // Función auxiliar para sincronizar los Sliders visuales al cambiar de preset
+        function updateSlidersUI(amb, viol, pnk) {
+            ambientSlider.value = amb;
+            document.getElementById("ambient-val").innerText = amb;
+            violetSlider.value = viol;
+            document.getElementById("violet-val").innerText = viol;
+            pinkSlider.value = pnk;
+            document.getElementById("pink-val").innerText = pnk;
+        }
+
+        // Eventos para hacer clic en los presets
+        presetItems.forEach(item => {
+            item.addEventListener("click", () => {
+                presetItems.forEach(i => i.classList.remove("active"));
+                item.classList.add("active");
+                applyPreset(item.dataset.preset);
+            });
+        });
+
+        // Aplicar el de combate por defecto al abrir
+        applyPreset("combate");
+
+        // 
