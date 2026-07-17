@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Minecraft Skin Renderer (Fijo)</title>
+    <script src="https://cdn.jsdelivr.net/npm/skinview3d@latest/bundles/skinview3d.bundle.js"></script>
+    <style>
+        /* (El estilo se mantiene igual para conservar el diseño) */
+        :root { --bg-color: #0c0813; --panel-bg: #140e21; --accent-purple: #a855f7; }
+        body { background-color: var(--bg-color); color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        .workspace { display: grid; grid-template-columns: 320px 1fr; gap: 20px; max-width: 1000px; width: 100%; }
+        .panel { background: var(--panel-bg); padding: 20px; border-radius: 16px; border: 1px solid #3b2063; }
+        .preview { background: radial-gradient(circle, #24143a 0%, #07040a 100%); border-radius: 16px; display: flex; justify-content: center; align-items: center; }
+        button, select { width: 100%; padding: 10px; margin-top: 10px; background: #1c122e; color: white; border: 1px solid #4a287a; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <h1>Generador de Renders</h1>
+
+    <div class="workspace">
+        <div class="panel">
+            <label>1. Sube tu Skin (.png)</label>
+            <input type="file" id="skin-uploader" accept="image/png">
+            
+            <label style="margin-top:20px; display:block;">2. Tipo de Modelo</label>
+            <select id="model-type">
+                <option value="default">Clásico (Steve)</option>
+                <option value="slim">Slim (Alex)</option>
+            </select>
+
+            <button id="download-btn" style="margin-top:20px; background: var(--accent-purple);">Descargar Imagen</button>
+        </div>
+
+        <div class="preview">
+            <div id="skin-container"></div>
+        </div>
+    </div>
+
+    <script>
+        // Inicializar el visor
+        const viewer = new skinview3d.SkinViewer({
+            canvas: document.createElement("canvas"),
+            width: 500,
+            height: 500,
+            skin: "https://bslayerss.github.io/skinview3d/img/steve.png"
+        });
+        document.getElementById("skin-container").appendChild(viewer.canvas);
+
+        // Cambiar modelo dinámicamente
+        document.getElementById("model-type").addEventListener("change", (e) => {
+            viewer.loadSkin(viewer.skinUrl, { model: e.target.value });
+        });
+
+        // Carga robusta de la imagen
+        document.getElementById("skin-uploader").addEventListener("change", (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const model = document.getElementById("model-type").value;
+                    // Forzamos la carga con el modelo seleccionado
+                    viewer.loadSkin(e.target.result, { model: model });
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Descarga
+        document.getElementById("download-btn").addEventListener("click", () => {
+            const link = document.createElement("a");
+            link.download = "mi-render.png";
+            link.href = viewer.canvas.toDataURL("image/png");
+            link.click();
+        });
+    </script>
+</body>
+</html>
